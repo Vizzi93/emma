@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+EMMA_ENROLLMENT_TOKEN="{{ enrollment_token }}"
+EMMA_CONFIG_JWT="{{ config_jwt }}"
+EMMA_DOWNLOAD_URL="{{ download_url }}"
+
+AGENT_DIR="${XDG_RUNTIME_DIR:-/tmp}/emma-agent"
+mkdir -p "$AGENT_DIR"
+
+curl -fsSL "$EMMA_DOWNLOAD_URL" -o "$AGENT_DIR/agent.tar.gz"
+tar -xzf "$AGENT_DIR/agent.tar.gz" -C "$AGENT_DIR"
+chmod +x "$AGENT_DIR/emma-agent"
+"$AGENT_DIR/emma-agent" \
+  --enrollment-token "$EMMA_ENROLLMENT_TOKEN" \
+  --config-jwt "$EMMA_CONFIG_JWT"

@@ -1,0 +1,18 @@
+Param()
+
+$ErrorActionPreference = "Stop"
+
+$EnrollmentToken = "{{ enrollment_token }}"
+$ConfigJwt = "{{ config_jwt }}"
+$DownloadUrl = "{{ download_url }}"
+
+$AgentRoot = Join-Path -Path $env:ProgramData -ChildPath "Emma\\Agent"
+New-Item -ItemType Directory -Force -Path $AgentRoot | Out-Null
+
+$ArchivePath = Join-Path -Path $AgentRoot -ChildPath "agent.zip"
+Invoke-WebRequest -UseBasicParsing -Uri $DownloadUrl -OutFile $ArchivePath
+
+Expand-Archive -Path $ArchivePath -DestinationPath $AgentRoot -Force
+$AgentBinary = Join-Path -Path $AgentRoot -ChildPath "emma-agent.exe"
+
+& $AgentBinary --enrollment-token $EnrollmentToken --config-jwt $ConfigJwt
