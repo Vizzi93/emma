@@ -1,0 +1,116 @@
+version: "3.9"
+
+# ============================================================
+# eMMA Production Overrides
+# ============================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================================
+
+services:
+  api:
+    # Remove dev volume mounts
+    volumes: []
+    
+    # Production command with more workers
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers 4
+      --proxy-headers
+      --forwarded-allow-ips='*'
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    
+    # Production environment
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_FORMAT=json
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service,environment"
+        env: "ENVIRONMENT"
+
+  postgres:
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Production PostgreSQL tuning
+    command: >
+      postgres
+      -c shared_buffers=512MB
+      -c effective_cache_size=1536MB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_connections=100
+      -c log_statement=mod
+      -c log_duration=on
+      -c log_min_duration_statement=100
+    
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 200mb
+      --maxmemory-policy allkeys-lru
+      --tcp-backlog 511
+      --timeout 0
+      --tcp-keepalive 300
+    
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Migrations don't run continuously in prod
+  migrations:
+    profiles:
+      - migrations
