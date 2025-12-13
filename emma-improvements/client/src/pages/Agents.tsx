@@ -1,20 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import {
   Server,
   Plus,
   Search,
   Filter,
-  MoreVertical,
   ExternalLink,
   Trash2,
   RefreshCw,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
-
-import { api } from '@/lib/api';
 import { Agent } from '@/types/agent';
 
 // Mock data - später durch API ersetzen

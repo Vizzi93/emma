@@ -134,7 +134,7 @@ class CheckResult(Base):
     # Details
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    check_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     
     # Timestamp
     checked_at: Mapped[datetime] = mapped_column(

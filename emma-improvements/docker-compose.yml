@@ -8,6 +8,25 @@ version: "3.9"
 # ============================================================
 
 services:
+  # === Frontend Client ===
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: emma-client
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client/src:/app/src:ro  # Hot reload in dev
+      - ./client/public:/app/public:ro
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - emma-network
+    depends_on:
+      - api
+
   # === Backend API ===
   api:
     build:
@@ -19,14 +38,16 @@ services:
       - "8000:8000"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-false}
       - DATABASE_URL=postgresql+asyncpg://emma:${DB_PASSWORD:-emma_dev}@postgres:5432/emma
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production-32chars}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret-key-change-in-production-32}
+      - ALLOWED_ORIGINS=["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173","http://localhost:8000"]
       - AGENT_BINARY_BASE_URL=${AGENT_BINARY_BASE_URL:-http://localhost:8000}
       - CONFIG_SIGNING_KEY_PATH=/run/secrets/signing_key
       - CONFIG_SIGNING_KEY_ID=${CONFIG_SIGNING_KEY_ID:-emma-config-v1}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - LOG_FORMAT=${LOG_FORMAT:-console}
     secrets:
       - signing_key
     volumes:

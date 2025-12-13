@@ -1,6 +1,5 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useServices } from '@/hooks/useServices';
-import { format } from 'date-fns';
 
 export function ResponseTimeChart() {
   const { data: servicesData, isLoading } = useServices();

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
-  Box, Play, Square, RotateCcw, Trash2, RefreshCw, Search, Filter,
+  Box, Play, Square, RotateCcw, Trash2, RefreshCw, Search,
   Cpu, HardDrive, Network, AlertTriangle, CheckCircle, Clock, Pause,
 } from 'lucide-react';
 import toast from 'react-hot-toast';

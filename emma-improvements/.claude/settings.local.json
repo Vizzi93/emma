@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(dir /b \"C:\\Users\\DnA\\Dojaflow_Projekte\\eMMA\\emma-repo\\emma-improvements\")",
+      "Bash(docker compose:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(docker ps:*)",
+      "Bash(tree:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

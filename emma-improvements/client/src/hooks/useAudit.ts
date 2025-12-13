@@ -66,3 +66,26 @@ export function useResourceHistory(resourceType: string, resourceId: string) {
     enabled: !!resourceType && !!resourceId,
   });
 }
+
+export async function exportAuditLogs(filters?: {
+  action?: string;
+  resource_type?: string;
+  user_id?: string;
+  success?: boolean;
+  since?: string;
+  until?: string;
+  format?: 'json' | 'csv';
+}): Promise<Blob> {
+  const params = new URLSearchParams();
+  if (filters?.action) params.set('action', filters.action);
+  if (filters?.resource_type) params.set('resource_type', filters.resource_type);
+  if (filters?.user_id) params.set('user_id', filters.user_id);
+  if (filters?.success !== undefined) params.set('success', String(filters.success));
+  if (filters?.since) params.set('since', filters.since);
+  if (filters?.until) params.set('until', filters.until);
+  params.set('format', filters?.format || 'json');
+
+  const query = params.toString();
+  const response = await fetch(`/api/audit/export?${query}`);
+  return response.blob();
+}

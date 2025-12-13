@@ -26,9 +26,10 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  rememberMe: boolean;
 
   // Actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
@@ -45,8 +46,9 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      rememberMe: false,
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, password: string, rememberMe: boolean = false) => {
         set({ isLoading: true, error: null });
 
         try {
@@ -60,7 +62,15 @@ export const useAuthStore = create<AuthState>()(
             tokens: response.tokens,
             isAuthenticated: true,
             isLoading: false,
+            rememberMe,
           });
+
+          // Clear persisted data on browser close if rememberMe is false
+          if (!rememberMe) {
+            window.addEventListener('beforeunload', () => {
+              localStorage.removeItem('emma-auth');
+            }, { once: true });
+          }
         } catch (error: any) {
           const message = error.response?.data?.detail || 'Login fehlgeschlagen';
           set({ error: message, isLoading: false });
@@ -169,6 +179,7 @@ export const useAuthStore = create<AuthState>()(
         tokens: state.tokens,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        rememberMe: state.rememberMe,
       }),
     }
   )

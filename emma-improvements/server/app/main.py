@@ -16,6 +16,7 @@ from app.api.v1.routers.agents import router as agents_router
 from app.api.v1.routers.audit import router as audit_router
 from app.api.v1.routers.auth import router as auth_router
 from app.api.v1.routers.docker import router as docker_router
+from app.api.v1.routers.monitoring import router as monitoring_router
 from app.api.v1.routers.services import router as services_router
 from app.api.v1.routers.users import router as users_router
 from app.api.v1.routers.websocket import router as websocket_router
@@ -26,6 +27,8 @@ from app.core.middleware import (
     RequestContextMiddleware,
     SecurityHeadersMiddleware,
 )
+from sqlalchemy import text
+
 from app.db.session import engine
 from app.services.scheduler import start_scheduler, stop_scheduler
 
@@ -52,7 +55,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Verify database connectivity
     try:
         async with engine.begin() as conn:
-            await conn.execute("SELECT 1")
+            await conn.execute(text("SELECT 1"))
         logger.info("database_connected")
     except Exception as exc:
         logger.critical("database_connection_failed", error=str(exc))
@@ -152,6 +155,9 @@ def create_application() -> FastAPI:
     app.include_router(auth_router, prefix=settings.api_v1_prefix)
     app.include_router(agents_router, prefix=settings.api_v1_prefix)
     app.include_router(audit_router, prefix=settings.api_v1_prefix)
+    app.include_router(monitoring_router, prefix=settings.api_v1_prefix)
+    # Legacy route for compatibility (without v1 prefix)
+    app.include_router(monitoring_router, prefix="/api", tags=["monitoring-legacy"])
     app.include_router(services_router, prefix=settings.api_v1_prefix)
     app.include_router(docker_router, prefix=settings.api_v1_prefix)
     app.include_router(users_router, prefix=settings.api_v1_prefix)
@@ -173,7 +179,7 @@ def create_application() -> FastAPI:
         """
         try:
             async with engine.begin() as conn:
-                await conn.execute("SELECT 1")
+                await conn.execute(text("SELECT 1"))
             return {"status": "ready", "database": "connected"}
         except Exception as exc:
             logger.error("readiness_check_failed", error=str(exc))

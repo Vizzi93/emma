@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { setupServer } from 'msw/node';
 import { HttpResponse, http } from 'msw';
+import { monitoringHandlers } from '@/mocks/monitoringHandlers';
 
 // Mock API handlers
 export const handlers = [
@@ -26,6 +27,9 @@ export const handlers = [
   http.get('/api/health', () => {
     return HttpResponse.json({ status: 'ok' });
   }),
+
+  // Include monitoring handlers
+  ...monitoringHandlers,
 ];
 
 const server = setupServer(...handlers);

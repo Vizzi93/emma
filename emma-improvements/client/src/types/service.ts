@@ -88,6 +88,9 @@ export interface DashboardStats {
   status_counts: Record<ServiceStatus, number>;
   services_due: number;
   avg_response_time_ms: number | null;
+  healthy_count: number;
+  degraded_count: number;
+  unhealthy_count: number;
 }
 
 export interface UptimeDataPoint {

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
-  FileText, Search, RefreshCw, CheckCircle, XCircle, Filter,
-  User, Server, Box, Shield, Clock, ChevronDown, ChevronRight,
+  FileText, Search, RefreshCw, CheckCircle, XCircle,
+  User, Server, ChevronDown, ChevronRight,
   Activity, LogIn, LogOut, UserPlus, Key, Trash2, Play, Square,
 } from 'lucide-react';
 

@@ -60,7 +60,7 @@ def get_engine() -> AsyncEngine:
 
 
 # Expose engine for backward compatibility
-engine = property(lambda self: get_engine())
+engine = get_engine()
 
 
 def get_session_factory() -> async_sessionmaker[AsyncSession]:

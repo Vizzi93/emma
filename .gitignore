@@ -27,10 +27,13 @@ yarn-debug.log*
 yarn-error.log*
 .npm
 .eslintcache
+*.tsbuildinfo
 
 # Build
 client/dist/
 *.local
+*.d.ts
+!src/**/*.d.ts
 
 # IDE
 .idea/
@@ -38,7 +41,6 @@ client/dist/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # Environment
 .env
@@ -61,3 +63,11 @@ logs/
 # Testing
 .coverage
 coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled vite config
+vite.config.js
+vite.config.d.ts

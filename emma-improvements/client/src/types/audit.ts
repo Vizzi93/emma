@@ -8,6 +8,8 @@ export interface AuditLog {
   user_id: string | null;
   user_email: string | null;
   ip_address: string | null;
+  user_agent: string | null;
+  request_id: string | null;
   description: string | null;
   details: Record<string, unknown> | null;
   old_values: Record<string, unknown> | null;
@@ -19,14 +21,28 @@ export interface AuditLog {
 
 export interface AuditStats {
   total_events: number;
+  total: number;
   successful: number;
   failed: number;
   by_action: Record<string, number>;
+  by_user: Record<string, number>;
   unique_users: number;
   period_days: number;
 }
 
 export type AuditActionCategory = 'auth' | 'user' | 'service' | 'container' | 'system';
+
+export interface AuditFilters {
+  action?: string;
+  resource_type?: string;
+  user_id?: string;
+  success?: boolean;
+  since?: string;
+  until?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
 
 export const ACTION_LABELS: Record<string, string> = {
   'auth.login': 'Login',

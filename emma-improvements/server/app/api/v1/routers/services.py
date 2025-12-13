@@ -192,9 +192,9 @@ async def delete_service(
 )
 async def toggle_service(
     service_id: UUID,
-    is_active: bool = Query(...),
     session: Annotated[AsyncSession, Depends(get_db_dependency)],
     current_user: Annotated[User, Depends(require_operator)],
+    is_active: bool = Query(...),
 ) -> ServiceResponse:
     """Enable or disable monitoring for a service."""
     manager = ServiceManager(session)
