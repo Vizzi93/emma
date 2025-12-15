@@ -14,7 +14,7 @@ export const auditKeys = {
 export function useAuditStats(days: number = 7) {
   return useQuery({
     queryKey: auditKeys.stats(days),
-    queryFn: () => api.get<AuditStats>(`/audit/stats?days=${days}`),
+    queryFn: () => api.get<AuditStats>(`/v1/audit/stats?days=${days}`),
   });
 }
 
@@ -44,7 +44,7 @@ export function useAuditLogs(filters?: {
       if (filters?.offset) params.set('offset', String(filters.offset));
       const query = params.toString();
       return api.get<{ items: AuditLog[]; total: number; limit: number; offset: number }>(
-        query ? `/audit?${query}` : '/audit'
+        query ? `/v1/audit?${query}` : '/v1/audit'
       );
     },
     refetchInterval: 30000,
@@ -54,7 +54,7 @@ export function useAuditLogs(filters?: {
 export function useUserActivity(userId: string, days: number = 30) {
   return useQuery({
     queryKey: auditKeys.userActivity(userId),
-    queryFn: () => api.get<AuditLog[]>(`/audit/user/${userId}?days=${days}`),
+    queryFn: () => api.get<AuditLog[]>(`/v1/audit/user/${userId}?days=${days}`),
     enabled: !!userId,
   });
 }
@@ -62,7 +62,7 @@ export function useUserActivity(userId: string, days: number = 30) {
 export function useResourceHistory(resourceType: string, resourceId: string) {
   return useQuery({
     queryKey: auditKeys.resourceHistory(resourceType, resourceId),
-    queryFn: () => api.get<AuditLog[]>(`/audit/resource/${resourceType}/${resourceId}`),
+    queryFn: () => api.get<AuditLog[]>(`/v1/audit/resource/${resourceType}/${resourceId}`),
     enabled: !!resourceType && !!resourceId,
   });
 }
@@ -86,6 +86,6 @@ export async function exportAuditLogs(filters?: {
   params.set('format', filters?.format || 'json');
 
   const query = params.toString();
-  const response = await fetch(`/api/audit/export?${query}`);
+  const response = await fetch(`/v1/audit/export?${query}`);
   return response.blob();
 }

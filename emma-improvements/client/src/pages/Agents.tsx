@@ -8,77 +8,192 @@ import {
   ExternalLink,
   Trash2,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Agent } from '@/types/agent';
+import toast from 'react-hot-toast';
+import { useAgents, useCreateAgent, useDeleteAgent } from '@/hooks/useAgents';
+import type { Agent, CreateAgentRequest } from '@/types/agent';
 
-// Mock data - später durch API ersetzen
-const mockAgents: Agent[] = [
-  {
-    id: '1',
-    host_id: 'host-prod-web-01',
-    hostname: 'prod-web-01',
+// Create Agent Modal
+function CreateAgentModal({ onClose }: { onClose: () => void }) {
+  const createAgent = useCreateAgent();
+  const [form, setForm] = useState<CreateAgentRequest>({
+    host_id: '',
+    hostname: '',
     os: 'linux',
     architecture: 'x86_64',
-    status: 'healthy',
     sampling_interval: 30,
-    tags: ['production', 'web'],
-    modules: { cpu: { enabled: true }, memory: { enabled: true } },
-    created_at: '2024-03-15T10:00:00Z',
-    updated_at: '2024-03-20T14:30:00Z',
-  },
-  {
-    id: '2',
-    host_id: 'host-prod-db-01',
-    hostname: 'prod-db-01',
-    os: 'linux',
-    architecture: 'x86_64',
-    status: 'warning',
-    sampling_interval: 15,
-    tags: ['production', 'database'],
-    modules: { cpu: { enabled: true }, disk: { enabled: true } },
-    created_at: '2024-03-10T08:00:00Z',
-    updated_at: '2024-03-20T14:25:00Z',
-  },
-  {
-    id: '3',
-    host_id: 'host-staging-api-01',
-    hostname: 'staging-api-01',
-    os: 'linux',
-    architecture: 'arm64',
-    status: 'healthy',
-    sampling_interval: 60,
-    tags: ['staging', 'api'],
-    modules: { cpu: { enabled: true } },
-    created_at: '2024-03-18T12:00:00Z',
-    updated_at: '2024-03-20T14:20:00Z',
-  },
-];
+    tags: [],
+  });
+  const [tagInput, setTagInput] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createAgent.mutateAsync(form);
+      toast.success('Agent erfolgreich erstellt');
+      onClose();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.detail || 'Fehler beim Erstellen des Agents');
+    }
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !form.tags?.includes(tagInput.trim())) {
+      setForm({ ...form, tags: [...(form.tags || []), tagInput.trim()] });
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setForm({ ...form, tags: form.tags?.filter((t) => t !== tag) || [] });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="card p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">Neuer Agent</h2>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Host-ID *</label>
+              <input
+                type="text"
+                required
+                value={form.host_id}
+                onChange={(e) => setForm({ ...form, host_id: e.target.value })}
+                className="input"
+                placeholder="host-prod-web-01"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Hostname *</label>
+              <input
+                type="text"
+                required
+                value={form.hostname}
+                onChange={(e) => setForm({ ...form, hostname: e.target.value })}
+                className="input"
+                placeholder="prod-web-01"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Betriebssystem</label>
+              <select
+                value={form.os}
+                onChange={(e) => setForm({ ...form, os: e.target.value })}
+                className="input"
+              >
+                <option value="linux">Linux</option>
+                <option value="windows">Windows</option>
+                <option value="macos">macOS</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Architektur</label>
+              <select
+                value={form.architecture}
+                onChange={(e) => setForm({ ...form, architecture: e.target.value })}
+                className="input"
+              >
+                <option value="x86_64">x86_64</option>
+                <option value="arm64">arm64</option>
+                <option value="i386">i386</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Interval (s)</label>
+              <input
+                type="number"
+                min={5}
+                max={3600}
+                value={form.sampling_interval}
+                onChange={(e) => setForm({ ...form, sampling_interval: parseInt(e.target.value) || 30 })}
+                className="input"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Tags</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                className="input flex-1"
+                placeholder="Tag eingeben..."
+              />
+              <button type="button" onClick={addTag} className="btn-ghost">
+                Hinzufügen
+              </button>
+            </div>
+            {form.tags && form.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {form.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 text-sm bg-gray-800 text-gray-300 rounded flex items-center gap-1"
+                  >
+                    {tag}
+                    <button type="button" onClick={() => removeTag(tag)} className="text-gray-500 hover:text-red-400">
+                      <X size={14} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 pt-4 border-t border-gray-700">
+            <button type="button" onClick={onClose} className="btn-ghost flex-1">
+              Abbrechen
+            </button>
+            <button type="submit" disabled={createAgent.isPending} className="btn-primary flex-1">
+              {createAgent.isPending ? 'Erstelle...' : 'Agent erstellen'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export function Agents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // API Query - nutzt erstmal Mock-Daten
-  // const { data: agents, isLoading } = useQuery({
-  //   queryKey: ['agents'],
-  //   queryFn: () => api.get<Agent[]>('/agents'),
-  // });
-
-  const agents = mockAgents;
-  const isLoading = false;
-
-  const filteredAgents = agents?.filter((agent) => {
-    const matchesSearch =
-      agent.hostname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.host_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesStatus = statusFilter === 'all' || agent.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+  // API Queries
+  const { data: agentsData, isLoading, refetch } = useAgents({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    search: searchQuery || undefined,
   });
+  const deleteAgent = useDeleteAgent();
+
+  const agents = agentsData?.items || [];
+
+  const handleDelete = async (agent: Agent) => {
+    if (!confirm(`Agent "${agent.hostname}" wirklich löschen?`)) return;
+    try {
+      await deleteAgent.mutateAsync(agent.id);
+      toast.success('Agent gelöscht');
+    } catch {
+      toast.error('Fehler beim Löschen');
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -103,7 +218,7 @@ export function Agents() {
             Verwalte und überwache alle registrierten Agents
           </p>
         </div>
-        <button className="btn-primary">
+        <button onClick={() => setShowCreateModal(true)} className="btn-primary">
           <Plus size={18} />
           Agent hinzufügen
         </button>
@@ -143,8 +258,8 @@ export function Agents() {
           </div>
 
           {/* Refresh */}
-          <button className="btn-ghost">
-            <RefreshCw size={18} />
+          <button onClick={() => refetch()} className="btn-ghost">
+            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
@@ -156,7 +271,7 @@ export function Agents() {
             <RefreshCw size={24} className="mx-auto animate-spin mb-2" />
             Lade Agents...
           </div>
-        ) : filteredAgents && filteredAgents.length > 0 ? (
+        ) : agents.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="table">
               <thead>
@@ -171,7 +286,7 @@ export function Agents() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAgents.map((agent) => (
+                {agents.map((agent) => (
                   <tr key={agent.id}>
                     <td>
                       <Link
@@ -221,7 +336,10 @@ export function Agents() {
                         >
                           <ExternalLink size={16} />
                         </Link>
-                        <button className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleDelete(agent)}
+                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -243,6 +361,9 @@ export function Agents() {
           </div>
         )}
       </div>
+
+      {/* Create Modal */}
+      {showCreateModal && <CreateAgentModal onClose={() => setShowCreateModal(false)} />}
     </div>
   );
 }

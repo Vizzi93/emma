@@ -56,41 +56,117 @@ export function useMonitoringHierarchy() {
 
 /**
  * Details einer einzelnen Region
+ * Extrahiert die Daten aus der bereits geladenen Hierarchie.
  */
 export function useRegionDetails(regionId: string) {
-  return useQuery({
+  const { data: hierarchy, isLoading: isHierarchyLoading } = useMonitoringHierarchy();
+
+  const query = useQuery({
     queryKey: monitoringKeys.region(regionId),
-    queryFn: () => api.get<Region>(`/v1/monitoring/regions/${regionId}`),
-    enabled: !!regionId,
+    queryFn: async () => {
+      // Aus der geladenen Hierarchie suchen
+      if (hierarchy?.regions) {
+        const region = hierarchy.regions.find((r) => r.id === regionId);
+        if (region) return region;
+      }
+
+      // Fallback: API-Call
+      try {
+        return await api.get<Region>(`/v1/monitoring/regions/${regionId}`);
+      } catch {
+        return null;
+      }
+    },
+    // Warte bis Hierarchie geladen ist, um Race-Condition zu vermeiden
+    enabled: !!regionId && !isHierarchyLoading,
     refetchInterval: 30000,
     staleTime: 10000,
   });
+
+  // Kombinierter Loading-State
+  return {
+    ...query,
+    isLoading: isHierarchyLoading || query.isLoading,
+  };
 }
 
 /**
  * Details eines einzelnen Verfahrens
+ * Extrahiert die Daten aus der bereits geladenen Hierarchie.
  */
 export function useVerfahrenDetails(verfahrenId: string) {
-  return useQuery({
+  const { data: hierarchy, isLoading: isHierarchyLoading } = useMonitoringHierarchy();
+
+  const query = useQuery({
     queryKey: monitoringKeys.verfahrenDetail(verfahrenId),
-    queryFn: () => api.get<Verfahren>(`/v1/monitoring/verfahren/${verfahrenId}`),
-    enabled: !!verfahrenId,
+    queryFn: async () => {
+      // Aus der geladenen Hierarchie suchen
+      if (hierarchy?.regions) {
+        for (const region of hierarchy.regions) {
+          const verfahren = region.verfahren.find((v) => v.id === verfahrenId);
+          if (verfahren) return verfahren;
+        }
+      }
+
+      // Fallback: API-Call
+      try {
+        return await api.get<Verfahren>(`/v1/monitoring/verfahren/${verfahrenId}`);
+      } catch {
+        return null;
+      }
+    },
+    // Warte bis Hierarchie geladen ist, um Race-Condition zu vermeiden
+    enabled: !!verfahrenId && !isHierarchyLoading,
     refetchInterval: 30000,
     staleTime: 10000,
   });
+
+  // Kombinierter Loading-State
+  return {
+    ...query,
+    isLoading: isHierarchyLoading || query.isLoading,
+  };
 }
 
 /**
  * Details eines einzelnen Hosts mit Services und Metriken
+ * Extrahiert die Daten aus der bereits geladenen Hierarchie,
+ * um ID-Inkonsistenzen nach Cache-Ablauf zu vermeiden.
  */
 export function useHostDetails(hostId: string) {
-  return useQuery({
+  const { data: hierarchy, isLoading: isHierarchyLoading } = useMonitoringHierarchy();
+
+  const query = useQuery({
     queryKey: monitoringKeys.host(hostId),
-    queryFn: () => api.get<Host>(`/v1/monitoring/hosts/${hostId}`),
-    enabled: !!hostId,
-    refetchInterval: 10000, // Hosts öfter aktualisieren
+    queryFn: async () => {
+      // Zuerst aus der geladenen Hierarchie suchen
+      if (hierarchy?.regions) {
+        for (const region of hierarchy.regions) {
+          for (const verfahren of region.verfahren) {
+            const host = verfahren.hosts.find((h) => h.id === hostId);
+            if (host) return host;
+          }
+        }
+      }
+
+      // Fallback: API-Call (nur wenn Hierarchie nicht verfügbar)
+      try {
+        return await api.get<Host>(`/v1/monitoring/hosts/${hostId}`);
+      } catch {
+        return null;
+      }
+    },
+    // Warte bis Hierarchie geladen ist, um Race-Condition zu vermeiden
+    enabled: !!hostId && !isHierarchyLoading,
+    refetchInterval: 10000,
     staleTime: 5000,
   });
+
+  // Kombinierter Loading-State: true wenn Hierarchie ODER Host-Query lädt
+  return {
+    ...query,
+    isLoading: isHierarchyLoading || query.isLoading,
+  };
 }
 
 // === Mutations ===

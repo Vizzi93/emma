@@ -16,6 +16,7 @@ from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
     MessageResponse,
+    PasswordResetRequest,
     RefreshTokenRequest,
     RegisterRequest,
     UserResponse,
@@ -181,6 +182,29 @@ async def get_current_user_profile(
 ) -> UserResponse:
     """Get current user profile."""
     return UserResponse.model_validate(current_user)
+
+
+@router.post(
+    "/password-reset/request",
+    response_model=MessageResponse,
+    summary="Request password reset",
+    description="Request a password reset email. Always returns success for security.",
+)
+async def request_password_reset(
+    request_body: PasswordResetRequest,
+    session: Annotated[AsyncSession, Depends(get_db_dependency)],
+) -> MessageResponse:
+    """
+    Request password reset.
+
+    Note: Always returns success to prevent email enumeration attacks.
+    In production, this would send an email with a reset link.
+    """
+    logger.info("password_reset_requested", email=request_body.email)
+    # TODO: Implement actual email sending in production
+    return MessageResponse(
+        message="If an account exists with this email, a reset link has been sent."
+    )
 
 
 @router.post(

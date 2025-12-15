@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { User, UserSession, UserStats, CreateUserRequest, UpdateUserRequest } from '@/types/user';
+import type { User, UserSession, UserStats, CreateUserRequest, UpdateUserRequest, ReplaceUserRequest } from '@/types/user';
 
 export const userKeys = {
   all: ['users'] as const,
@@ -14,7 +14,7 @@ export const userKeys = {
 export function useUserStats() {
   return useQuery({
     queryKey: userKeys.stats(),
-    queryFn: () => api.get<UserStats>('/users/stats'),
+    queryFn: () => api.get<UserStats>('/v1/users/stats'),
   });
 }
 
@@ -36,7 +36,7 @@ export function useUsers(filters?: {
       if (filters?.offset) params.set('offset', String(filters.offset));
       const query = params.toString();
       return api.get<{ items: User[]; total: number; limit: number; offset: number }>(
-        query ? `/users?${query}` : '/users'
+        query ? `/v1/users?${query}` : '/v1/users'
       );
     },
   });
@@ -45,7 +45,7 @@ export function useUsers(filters?: {
 export function useUser(userId: string) {
   return useQuery({
     queryKey: userKeys.detail(userId),
-    queryFn: () => api.get<User>(`/users/${userId}`),
+    queryFn: () => api.get<User>(`/v1/users/${userId}`),
     enabled: !!userId,
   });
 }
@@ -53,7 +53,7 @@ export function useUser(userId: string) {
 export function useUserSessions(userId: string) {
   return useQuery({
     queryKey: userKeys.sessions(userId),
-    queryFn: () => api.get<{ user_id: string; sessions: UserSession[]; total: number }>(`/users/${userId}/sessions`),
+    queryFn: () => api.get<{ user_id: string; sessions: UserSession[]; total: number }>(`/v1/users/${userId}/sessions`),
     enabled: !!userId,
   });
 }
@@ -61,7 +61,7 @@ export function useUserSessions(userId: string) {
 export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateUserRequest) => api.post<User>('/users', data),
+    mutationFn: (data: CreateUserRequest) => api.post<User>('/v1/users', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
@@ -72,7 +72,18 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) => api.patch<User>(`/users/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) => api.patch<User>(`/v1/users/${id}`, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+    },
+  });
+}
+
+export function useReplaceUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ReplaceUserRequest }) => api.put<User>(`/v1/users/${id}`, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
@@ -83,14 +94,14 @@ export function useUpdateUser() {
 export function useResetPassword() {
   return useMutation({
     mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
-      api.post(`/users/${id}/reset-password`, { new_password: newPassword }),
+      api.post(`/v1/users/${id}/reset-password`, { new_password: newPassword }),
   });
 }
 
 export function useDeleteUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/users/${id}`),
+    mutationFn: (id: string) => api.delete(`/v1/users/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
@@ -101,7 +112,7 @@ export function useDeleteUser() {
 export function useRevokeAllSessions() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (userId: string) => api.delete(`/users/${userId}/sessions`),
+    mutationFn: (userId: string) => api.delete(`/v1/users/${userId}/sessions`),
     onSuccess: (_, userId) => {
       queryClient.invalidateQueries({ queryKey: userKeys.sessions(userId) });
     },
@@ -112,7 +123,7 @@ export function useRevokeSession() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, sessionId }: { userId: string; sessionId: string }) =>
-      api.delete(`/users/${userId}/sessions/${sessionId}`),
+      api.delete(`/v1/users/${userId}/sessions/${sessionId}`),
     onSuccess: (_, { userId }) => {
       queryClient.invalidateQueries({ queryKey: userKeys.sessions(userId) });
     },

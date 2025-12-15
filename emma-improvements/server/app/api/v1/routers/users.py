@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user, get_db_dependency, require_admin
 from app.models.user import User
 from app.schemas.users import (
-    CreateUserRequest, UpdateUserRequest, ResetPasswordRequest,
+    CreateUserRequest, UpdateUserRequest, ReplaceUserRequest, ResetPasswordRequest,
     UserResponse, UserListResponse, UserSessionsResponse, SessionResponse, UserStatsResponse,
 )
 from app.services.user_management import (
@@ -97,10 +97,36 @@ async def update_user(
     current_user: Annotated[User, Depends(require_admin)],
     session: Annotated[AsyncSession, Depends(get_db_dependency)],
 ) -> UserResponse:
-    """Update user details (admin only)."""
+    """Update user details partially (admin only)."""
     service = UserManagementService(session)
     try:
         user = await service.update_user(user_id, current_user.id, **request.model_dump(exclude_unset=True))
+        return UserResponse.model_validate(user)
+    except UserNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except CannotModifySelfError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+    except UserManagementError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def replace_user(
+    user_id: UUID,
+    request: ReplaceUserRequest,
+    current_user: Annotated[User, Depends(require_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_dependency)],
+) -> UserResponse:
+    """Replace user details completely (admin only)."""
+    service = UserManagementService(session)
+    try:
+        user = await service.update_user(
+            user_id,
+            current_user.id,
+            full_name=request.full_name,
+            role=request.role,
+            is_active=request.is_active,
+        )
         return UserResponse.model_validate(user)
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e

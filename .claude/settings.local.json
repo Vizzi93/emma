@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: eMMA v2.0.0 - Major Update\n\n- Added monitoring components and hierarchy system\n- New agent management functionality\n- Enhanced audit logging system\n- Docker containerization support\n- Improved frontend with monitoring store\n- Database migrations and schema updates\n- Mock data handlers for development\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git tag -a v2.0.0 -m \"eMMA v2.0.0 - Major Update\")"
     ]
   }
 }

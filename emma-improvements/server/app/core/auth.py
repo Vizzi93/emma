@@ -7,36 +7,44 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
+import bcrypt
 import jwt
-from passlib.context import CryptContext
 
 from app.core.config import get_settings
 
-# Password hashing context
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12,
-)
+# Bcrypt configuration
+BCRYPT_ROUNDS = 12
 
 
 class PasswordHasher:
-    """Password hashing utilities."""
+    """Password hashing utilities using bcrypt directly."""
 
     @staticmethod
     def hash(password: str) -> str:
         """Hash a password using bcrypt."""
-        return pwd_context.hash(password)
+        salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
+        return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
     @staticmethod
     def verify(plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash."""
-        return pwd_context.verify(plain_password, hashed_password)
+        try:
+            return bcrypt.checkpw(
+                plain_password.encode('utf-8'),
+                hashed_password.encode('utf-8')
+            )
+        except (ValueError, TypeError):
+            return False
 
     @staticmethod
     def needs_rehash(hashed_password: str) -> bool:
-        """Check if password hash needs to be updated."""
-        return pwd_context.needs_update(hashed_password)
+        """Check if password hash needs to be updated (different rounds)."""
+        try:
+            # Extract rounds from hash (format: $2b$XX$...)
+            current_rounds = int(hashed_password.split('$')[2])
+            return current_rounds != BCRYPT_ROUNDS
+        except (IndexError, ValueError):
+            return True
 
 
 class JWTHandler:

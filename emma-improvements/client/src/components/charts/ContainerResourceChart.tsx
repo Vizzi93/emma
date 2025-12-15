@@ -16,7 +16,7 @@ export function ContainerResourceChart() {
       const stats = await Promise.all(
         runningContainers.slice(0, 6).map(async (container) => {
           try {
-            const stat = await api.get<ContainerStats>(`/docker/containers/${container.id}/stats`);
+            const stat = await api.get<ContainerStats>(`/v1/docker/containers/${container.id}/stats`);
             return { name: container.name, ...stat };
           } catch {
             return { name: container.name, cpu_percent: 0, memory_percent: 0 };

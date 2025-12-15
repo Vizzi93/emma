@@ -43,3 +43,9 @@ export interface UpdateUserRequest {
   role?: UserRole;
   is_active?: boolean;
 }
+
+export interface ReplaceUserRequest {
+  full_name: string | null;
+  role: UserRole;
+  is_active: boolean;
+}

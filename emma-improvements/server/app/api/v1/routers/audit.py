@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import csv
+import io
+import json
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db_dependency, require_admin
@@ -94,3 +98,67 @@ async def get_resource_history(
     service = AuditService(session)
     logs = await service.get_resource_history(resource_type, resource_id, limit=limit)
     return [AuditLogResponse.model_validate(log) for log in logs]
+
+
+@router.get("/export")
+async def export_audit_logs(
+    current_user: Annotated[User, Depends(require_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_dependency)],
+    format: Literal["json", "csv"] = Query("json"),
+    action: str | None = Query(None),
+    resource_type: str | None = Query(None),
+    user_id: UUID | None = Query(None),
+    success: bool | None = Query(None),
+    since: datetime | None = Query(None),
+    until: datetime | None = Query(None),
+    search: str | None = Query(None, max_length=100),
+    limit: int = Query(1000, ge=1, le=10000),
+) -> StreamingResponse:
+    """Export audit logs as JSON or CSV (admin only)."""
+    service = AuditService(session)
+    logs, _ = await service.query(
+        action=action,
+        resource_type=resource_type,
+        user_id=user_id,
+        success=success,
+        since=since,
+        until=until,
+        search=search,
+        limit=limit,
+        offset=0,
+    )
+
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "id", "timestamp", "action", "resource_type", "resource_id",
+            "user_id", "user_email", "success", "ip_address", "details"
+        ])
+        for log in logs:
+            writer.writerow([
+                str(log.id),
+                log.timestamp.isoformat(),
+                log.action,
+                log.resource_type,
+                log.resource_id or "",
+                str(log.user_id) if log.user_id else "",
+                log.user_email or "",
+                str(log.success),
+                log.ip_address or "",
+                json.dumps(log.details) if log.details else "",
+            ])
+        content = output.getvalue()
+        media_type = "text/csv"
+        filename = f"audit_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    else:
+        data = [AuditLogResponse.model_validate(log).model_dump(mode="json") for log in logs]
+        content = json.dumps(data, indent=2, default=str)
+        media_type = "application/json"
+        filename = f"audit_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
+    return StreamingResponse(
+        io.BytesIO(content.encode("utf-8")),
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

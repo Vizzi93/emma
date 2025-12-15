@@ -40,7 +40,7 @@ export function useServices(filters?: {
       if (filters?.group_name) params.set('group_name', filters.group_name);
 
       const query = params.toString();
-      const url = query ? `/services?${query}` : '/services';
+      const url = query ? `/v1/services?${query}` : '/v1/services';
       return api.get<{ items: Service[]; total: number }>(url);
     },
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -50,7 +50,7 @@ export function useServices(filters?: {
 export function useService(serviceId: string) {
   return useQuery({
     queryKey: serviceKeys.detail(serviceId),
-    queryFn: () => api.get<ServiceWithHistory>(`/services/${serviceId}`),
+    queryFn: () => api.get<ServiceWithHistory>(`/v1/services/${serviceId}`),
     enabled: !!serviceId,
     refetchInterval: 10000, // Refetch every 10 seconds
   });
@@ -59,7 +59,7 @@ export function useService(serviceId: string) {
 export function useServiceHistory(serviceId: string, hours: number = 24) {
   return useQuery({
     queryKey: serviceKeys.history(serviceId),
-    queryFn: () => api.get<CheckResult[]>(`/services/${serviceId}/history?hours=${hours}`),
+    queryFn: () => api.get<CheckResult[]>(`/v1/services/${serviceId}/history?hours=${hours}`),
     enabled: !!serviceId,
     refetchInterval: 30000,
   });
@@ -68,7 +68,7 @@ export function useServiceHistory(serviceId: string, hours: number = 24) {
 export function useServiceUptime(serviceId: string, hours: number = 24) {
   return useQuery({
     queryKey: serviceKeys.uptime(serviceId),
-    queryFn: () => api.get<ServiceUptimeData>(`/services/${serviceId}/uptime?hours=${hours}`),
+    queryFn: () => api.get<ServiceUptimeData>(`/v1/services/${serviceId}/uptime?hours=${hours}`),
     enabled: !!serviceId,
   });
 }
@@ -76,7 +76,7 @@ export function useServiceUptime(serviceId: string, hours: number = 24) {
 export function useDashboardStats() {
   return useQuery({
     queryKey: serviceKeys.stats(),
-    queryFn: () => api.get<DashboardStats>('/services/stats'),
+    queryFn: () => api.get<DashboardStats>('/v1/services/stats'),
     refetchInterval: 30000,
   });
 }
@@ -87,7 +87,7 @@ export function useCreateService() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateServiceRequest) => api.post<Service>('/services', data),
+    mutationFn: (data: CreateServiceRequest) => api.post<Service>('/v1/services', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
       queryClient.invalidateQueries({ queryKey: serviceKeys.stats() });
@@ -100,7 +100,7 @@ export function useUpdateService() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateServiceRequest }) =>
-      api.patch<Service>(`/services/${id}`, data),
+      api.patch<Service>(`/v1/services/${id}`, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
@@ -112,7 +112,7 @@ export function useDeleteService() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/services/${id}`),
+    mutationFn: (id: string) => api.delete(`/v1/services/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
       queryClient.invalidateQueries({ queryKey: serviceKeys.stats() });
@@ -125,7 +125,7 @@ export function useToggleService() {
 
   return useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
-      api.post<Service>(`/services/${id}/toggle?is_active=${is_active}`),
+      api.post<Service>(`/v1/services/${id}/toggle?is_active=${is_active}`),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
@@ -138,7 +138,7 @@ export function useRunCheck() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.post<CheckResult>(`/services/${id}/check`),
+    mutationFn: (id: string) => api.post<CheckResult>(`/v1/services/${id}/check`),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: serviceKeys.history(id) });

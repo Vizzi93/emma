@@ -12,7 +12,16 @@
       "Bash(docker ps:*)",
       "Bash(tree:*)",
       "Bash(npx eslint:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(alembic upgrade:*)",
+      "Bash(pushd:*)",
+      "Bash(DATABASE_URL=\"sqlite+aiosqlite:///./emma.db\" alembic upgrade:*)",
+      "Bash(DATABASE_URL=\"sqlite+aiosqlite:///./emma.db\" python -m uvicorn:*)",
+      "Bash(pkill:*)",
+      "Bash(python -m uvicorn:*)",
+      "Bash(openssl genrsa:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)"
     ]
   }
 }

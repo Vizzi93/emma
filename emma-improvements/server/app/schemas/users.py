@@ -29,10 +29,17 @@ class CreateUserRequest(BaseModel):
 
 
 class UpdateUserRequest(BaseModel):
-    """Update user details."""
+    """Update user details (partial update - PATCH)."""
     full_name: str | None = None
     role: str | None = Field(None, pattern="^(admin|operator|viewer)$")
     is_active: bool | None = None
+
+
+class ReplaceUserRequest(BaseModel):
+    """Replace user details (full update - PUT)."""
+    full_name: str | None = Field(None, max_length=255)
+    role: str = Field(..., pattern="^(admin|operator|viewer)$")
+    is_active: bool
 
 
 class ResetPasswordRequest(BaseModel):

@@ -29,7 +29,7 @@ export function ForgotPassword() {
   const onSubmit = async (data: ForgotPasswordForm) => {
     setIsLoading(true);
     try {
-      await api.post('/auth/password-reset/request', { email: data.email });
+      await api.post('/v1/auth/password-reset/request', { email: data.email });
       setIsSubmitted(true);
     } catch (error: any) {
       // Always show success to prevent email enumeration

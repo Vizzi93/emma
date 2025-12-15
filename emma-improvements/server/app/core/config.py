@@ -50,6 +50,10 @@ class Settings(BaseSettings):
         description="Enable debug mode (NEVER in production)",
     )
 
+    # === Server ===
+    host: str = Field(default="0.0.0.0", description="Server bind address")
+    port: int = Field(default=3001, ge=1, le=65535, description="Server port")
+
     # === API ===
     api_v1_prefix: str = Field(default="/v1")
     api_title: str = Field(default="eMMA Monitoring API")
