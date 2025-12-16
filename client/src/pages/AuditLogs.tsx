@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
-  FileText, Search, RefreshCw, Download, Filter, ChevronDown, ChevronRight,
-  User, Shield, Server, Box, Settings, Key, LogIn, LogOut, AlertTriangle,
-  Activity, Calendar, BarChart3,
+  FileText, Search, RefreshCw, Download, ChevronDown, ChevronRight,
+  User, Shield, Box, Settings, Key, LogIn, LogOut, AlertTriangle,
+  Activity,
 } from 'lucide-react';
 
 import { useAuditLogs, useAuditStats, exportAuditLogs } from '@/hooks/useAudit';

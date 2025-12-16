@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
-  Users as UsersIcon, UserPlus, Search, Shield, User as UserIcon, Eye,
-  RefreshCw, MoreVertical, Key, Trash2, Ban, CheckCircle, XCircle,
+  Users as UsersIcon, UserPlus, Search, Shield, Eye,
+  RefreshCw, MoreVertical, Key, Trash2, Ban, CheckCircle,
   Crown, Wrench,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -67,7 +67,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function UserRow({ user, onEdit }: { user: User; onEdit: (user: User) => void }) {
+function UserRow({ user }: { user: User }) {
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
   const resetPassword = useResetPassword();
@@ -219,7 +219,7 @@ export function Users() {
         {isLoading ? (
           <div className="card p-8 text-center text-gray-400"><RefreshCw size={24} className="mx-auto animate-spin mb-2" />Lade Benutzer...</div>
         ) : users.length > 0 ? (
-          users.map((user) => <UserRow key={user.id} user={user} onEdit={() => {}} />)
+          users.map((user) => <UserRow key={user.id} user={user} />)
         ) : (
           <div className="card p-8 text-center">
             <UsersIcon size={48} className="mx-auto text-gray-600 mb-4" />

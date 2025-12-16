@@ -74,7 +74,7 @@ apiClient.interceptors.response.use(
         if (!state?.tokens?.refresh_token) throw new Error('No refresh token');
 
         const response = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
+          `${API_BASE_URL}/v1/auth/refresh`,
           { refresh_token: state.tokens.refresh_token },
           { headers: { 'Content-Type': 'application/json' } }
         );

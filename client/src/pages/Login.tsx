@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 const loginSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
   password: z.string().min(1, 'Passwort ist erforderlich'),
+  rememberMe: z.boolean().default(false),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -32,7 +33,7 @@ export function Login() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, data.rememberMe);
       navigate(from, { replace: true });
     } catch {
       // Error is handled by the store
@@ -121,6 +122,19 @@ export function Login() {
               {errors.password && (
                 <p className="mt-1 text-sm text-red-400">{errors.password.message}</p>
               )}
+            </div>
+
+            {/* Remember Me */}
+            <div className="flex items-center">
+              <input
+                id="rememberMe"
+                type="checkbox"
+                {...register('rememberMe')}
+                className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-emma-500 focus:ring-emma-500 focus:ring-offset-gray-800"
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-300">
+                Angemeldet bleiben
+              </label>
             </div>
 
             {/* Submit */}

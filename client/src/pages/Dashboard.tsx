@@ -1,8 +1,21 @@
-import { Activity, Server, Box, Users, AlertTriangle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Activity,
+  Box,
+  Users,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  PanelLeftClose,
+  PanelLeft,
+  X,
+} from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useServices';
 import { useDockerInfo } from '@/hooks/useDocker';
 import { useUserStats } from '@/hooks/useUsers';
 import { useAuditStats } from '@/hooks/useAudit';
+import { useMonitoringStore } from '@/stores/monitoringStore';
 import {
   ServiceHealthChart,
   ResponseTimeChart,
@@ -10,6 +23,12 @@ import {
   ContainerResourceChart,
   ActivityTimeline,
 } from '@/components/charts';
+import {
+  MonitoringTree,
+  RegionDetail,
+  VerfahrenDetail,
+  HostDetail,
+} from '@/components/monitoring';
 
 function StatCard({ title, value, subtitle, icon: Icon, color }: {
   title: string;
@@ -46,7 +65,7 @@ function AlertBanner({ healthy, degraded, unhealthy }: { healthy: number; degrad
       </div>
     );
   }
-  
+
   if (degraded > 0) {
     return (
       <div className="bg-yellow-900/30 border border-yellow-800 rounded-xl p-4 flex items-center gap-3">
@@ -70,20 +89,15 @@ function AlertBanner({ healthy, degraded, unhealthy }: { healthy: number; degrad
   );
 }
 
-export function Dashboard() {
+// Default Dashboard Content (Stats, Charts)
+function DashboardOverview() {
   const { data: serviceStats } = useDashboardStats();
   const { data: dockerInfo } = useDockerInfo();
   const { data: userStats } = useUserStats();
   const { data: auditStats } = useAuditStats(7);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1">Systemübersicht und Monitoring</p>
-      </div>
-
+    <div className="space-y-6">
       {/* Alert Banner */}
       {serviceStats && (
         <AlertBanner
@@ -162,6 +176,215 @@ export function Dashboard() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Detail View based on Selection
+function DetailView() {
+  const { selection, setSelection } = useMonitoringStore();
+
+  if (!selection) {
+    return <DashboardOverview />;
+  }
+
+  switch (selection.type) {
+    case 'region':
+      return (
+        <RegionDetail
+          regionId={selection.id}
+          onVerfahrenSelect={(verfahrenId) =>
+            setSelection('verfahren', verfahrenId, [...selection.path, verfahrenId])
+          }
+        />
+      );
+    case 'verfahren':
+      return (
+        <VerfahrenDetail
+          verfahrenId={selection.id}
+          onHostSelect={(hostId) =>
+            setSelection('host', hostId, [...selection.path, hostId])
+          }
+        />
+      );
+    case 'host':
+      return (
+        <HostDetail
+          hostId={selection.id}
+          onViewFullLogs={(hostId) => {
+            // Navigation zu Logs-Seite könnte hier implementiert werden
+            console.log('View full logs for:', hostId);
+          }}
+        />
+      );
+    default:
+      return <DashboardOverview />;
+  }
+}
+
+// Mobile Drawer Component
+function MobileDrawer({
+  isOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={`
+          fixed inset-0 bg-black/60 backdrop-blur-sm z-40
+          transition-opacity duration-300 lg:hidden
+          ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+        `}
+        onClick={onClose}
+      />
+
+      {/* Drawer */}
+      <div
+        className={`
+          fixed top-0 left-0 h-full w-80 bg-gray-900 border-r border-gray-800 z-50
+          transform transition-transform duration-300 ease-in-out lg:hidden
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+          <h2 className="text-lg font-semibold text-white">Monitoring</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <X size={20} className="text-gray-400" />
+          </button>
+        </div>
+        <div className="overflow-y-auto h-[calc(100%-65px)]">
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function Dashboard() {
+  const { selection, clearSelection } = useMonitoringStore();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  // Breadcrumb-Pfad für Header
+  const getBreadcrumb = () => {
+    if (!selection) return null;
+
+    const labels: Record<string, string> = {
+      region: 'Region',
+      verfahren: 'Verfahren',
+      host: 'Host',
+    };
+
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <button
+          onClick={clearSelection}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          Dashboard
+        </button>
+        <span className="text-gray-600">/</span>
+        <span className="text-emma-400">{labels[selection.type]}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex h-full -m-6">
+      {/* Mobile Drawer */}
+      <MobileDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+      >
+        <MonitoringTree
+          onSelect={() => setIsMobileDrawerOpen(false)}
+          className="h-full"
+        />
+      </MobileDrawer>
+
+      {/* Desktop Sidebar */}
+      <aside
+        className={`
+          hidden lg:flex flex-col border-r border-gray-800 bg-gray-900/50
+          transition-all duration-300 ease-in-out flex-shrink-0
+          ${isSidebarCollapsed ? 'w-0 overflow-hidden' : 'w-80'}
+        `}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+            Monitoring
+          </h2>
+          <button
+            onClick={() => setIsSidebarCollapsed(true)}
+            className="p-1.5 hover:bg-gray-800 rounded-lg transition-colors"
+            title="Sidebar einklappen"
+          >
+            <PanelLeftClose size={18} className="text-gray-400" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <MonitoringTree className="h-full" />
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6 animate-fade-in">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {/* Sidebar Toggle Buttons */}
+              {isSidebarCollapsed && (
+                <button
+                  onClick={() => setIsSidebarCollapsed(false)}
+                  className="hidden lg:flex p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                  title="Sidebar ausklappen"
+                >
+                  <PanelLeft size={20} className="text-gray-400" />
+                </button>
+              )}
+              <button
+                onClick={() => setIsMobileDrawerOpen(true)}
+                className="lg:hidden p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Monitoring-Tree öffnen"
+              >
+                <PanelLeft size={20} className="text-gray-400" />
+              </button>
+
+              <div>
+                <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+                {selection ? (
+                  getBreadcrumb()
+                ) : (
+                  <p className="text-gray-400 mt-1">Systemübersicht und Monitoring</p>
+                )}
+              </div>
+            </div>
+
+            {/* Back Button when selection active */}
+            {selection && (
+              <button
+                onClick={clearSelection}
+                className="btn-ghost text-sm"
+              >
+                Zurück zur Übersicht
+              </button>
+            )}
+          </div>
+
+          {/* Content Area */}
+          <DetailView />
+        </div>
+      </main>
     </div>
   );
 }

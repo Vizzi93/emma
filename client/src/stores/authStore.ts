@@ -26,9 +26,10 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  rememberMe: boolean;
 
   // Actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
@@ -45,12 +46,13 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      rememberMe: false,
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, password: string, rememberMe: boolean = false) => {
         set({ isLoading: true, error: null });
 
         try {
-          const response = await api.post<{ user: User; tokens: Tokens }>('/auth/login', {
+          const response = await api.post<{ user: User; tokens: Tokens }>('/v1/auth/login', {
             email,
             password,
           });
@@ -60,7 +62,15 @@ export const useAuthStore = create<AuthState>()(
             tokens: response.tokens,
             isAuthenticated: true,
             isLoading: false,
+            rememberMe,
           });
+
+          // Clear persisted data on browser close if rememberMe is false
+          if (!rememberMe) {
+            window.addEventListener('beforeunload', () => {
+              localStorage.removeItem('emma-auth');
+            }, { once: true });
+          }
         } catch (error: any) {
           const message = error.response?.data?.detail || 'Login fehlgeschlagen';
           set({ error: message, isLoading: false });
@@ -72,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await api.post<{ user: User; tokens: Tokens }>('/auth/register', {
+          const response = await api.post<{ user: User; tokens: Tokens }>('/v1/auth/register', {
             email,
             password,
             full_name: fullName,
@@ -96,7 +106,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           if (tokens?.refresh_token) {
-            await api.post('/auth/logout', {
+            await api.post('/v1/auth/logout', {
               refresh_token: tokens.refresh_token,
             });
           }
@@ -121,7 +131,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const response = await api.post<{ access_token: string; expires_in: number }>(
-            '/auth/refresh',
+            '/v1/auth/refresh',
             { refresh_token: tokens.refresh_token }
           );
 
@@ -147,7 +157,7 @@ export const useAuthStore = create<AuthState>()(
 
       fetchUser: async () => {
         try {
-          const user = await api.get<User>('/auth/me');
+          const user = await api.get<User>('/v1/auth/me');
           set({ user, isAuthenticated: true });
         } catch {
           set({
@@ -169,6 +179,7 @@ export const useAuthStore = create<AuthState>()(
         tokens: state.tokens,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        rememberMe: state.rememberMe,
       }),
     }
   )

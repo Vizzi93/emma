@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft, Mail, Loader2, CheckCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 import { api } from '@/lib/api';
 
@@ -30,7 +29,7 @@ export function ForgotPassword() {
   const onSubmit = async (data: ForgotPasswordForm) => {
     setIsLoading(true);
     try {
-      await api.post('/auth/password-reset/request', { email: data.email });
+      await api.post('/v1/auth/password-reset/request', { email: data.email });
       setIsSubmitted(true);
     } catch (error: any) {
       // Always show success to prevent email enumeration

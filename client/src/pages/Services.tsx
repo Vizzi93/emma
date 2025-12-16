@@ -1,19 +1,14 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
-  Activity, Plus, Search, Filter, RefreshCw, Globe, Server, Shield, Wifi,
+  Activity, Plus, Search, RefreshCw,
   Play, Pause, Trash2, CheckCircle, AlertTriangle, XCircle, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useServices, useDashboardStats, useToggleService, useRunCheck, useDeleteService } from '@/hooks/useServices';
-import type { Service, ServiceStatus, ServiceType } from '@/types/service';
-
-const SERVICE_TYPE_ICONS: Record<ServiceType, typeof Globe> = {
-  http: Globe, https: Shield, tcp: Server, ssl: Shield, dns: Wifi, ping: Activity,
-};
+import type { Service, ServiceStatus } from '@/types/service';
 
 const STATUS_CONFIG: Record<ServiceStatus, { color: string; bg: string; icon: typeof CheckCircle; label: string }> = {
   healthy: { color: 'text-green-400', bg: 'bg-green-900/30 border-green-700', icon: CheckCircle, label: 'Healthy' },

@@ -1,6 +1,6 @@
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Activity, User, Server, Box, Shield, LogIn, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Activity, User, Server, Box, Shield, LogIn, AlertTriangle } from 'lucide-react';
 import { useAuditLogs } from '@/hooks/useAudit';
 import { ACTION_LABELS } from '@/types/audit';
 

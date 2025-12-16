@@ -43,9 +43,15 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class PasswordResetRequest(BaseModel):
+    """Password reset request (forgot password)."""
+
+    email: EmailStr
+
+
 class ChangePasswordRequest(BaseModel):
     """Password change request."""
-    
+
     current_password: str
     new_password: str = Field(..., min_length=8, max_length=128)
 
