@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { ProtectedRoute, GuestRoute } from '@/components/auth/ProtectedRoute';
 import { Dashboard } from '@/pages/Dashboard';
@@ -17,8 +18,9 @@ import { NotFound } from '@/pages/NotFound';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
         {/* Public Auth Routes */}
         <Route
           path="/login"
@@ -60,8 +62,9 @@ function App() {
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

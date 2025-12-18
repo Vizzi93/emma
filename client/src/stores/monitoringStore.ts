@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { TreeSelection, SelectionType } from '@/types/monitoring';
 
+// Type for persisted state (serialized form)
+interface PersistedMonitoringState {
+  expandedNodes: string[];
+  selection: TreeSelection | null;
+}
+
 interface MonitoringState {
   // Expanded nodes in tree (Set of node IDs)
   expandedNodes: Set<string>;
@@ -77,12 +83,15 @@ export const useMonitoringStore = create<MonitoringState>()(
         expandedNodes: Array.from(state.expandedNodes),
         selection: state.selection,
       }),
-      merge: (persisted: any, current) => ({
-        ...current,
-        // Convert Array back to Set when loading
-        expandedNodes: new Set(persisted?.expandedNodes || []),
-        selection: persisted?.selection || null,
-      }),
+      merge: (persisted: unknown, current: MonitoringState): MonitoringState => {
+        const persistedState = persisted as Partial<PersistedMonitoringState> | null;
+        return {
+          ...current,
+          // Convert Array back to Set when loading
+          expandedNodes: new Set(persistedState?.expandedNodes ?? []),
+          selection: persistedState?.selection ?? null,
+        };
+      },
     }
   )
 );

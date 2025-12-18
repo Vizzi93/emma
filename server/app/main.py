@@ -30,6 +30,7 @@ from app.core.middleware import (
 from sqlalchemy import text
 
 from app.db.session import engine
+from app.services.docker_client import get_docker_manager
 from app.services.scheduler import start_scheduler, stop_scheduler
 
 logger = structlog.get_logger(__name__)
@@ -71,6 +72,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("application_shutting_down")
     await stop_scheduler()
     logger.info("health_check_scheduler_stopped")
+
+    # Close Docker clients
+    docker_manager = get_docker_manager()
+    await docker_manager.close_all()
+    logger.info("docker_clients_closed")
+
     await engine.dispose()
     logger.info("database_pool_closed")
 

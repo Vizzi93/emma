@@ -23,11 +23,19 @@ async def get_settings_dependency() -> Settings:
     return get_settings()
 
 
-async def get_db_dependency() -> AsyncSession:
-    """Expose DB session dependency."""
+async def get_db_dependency():
+    """
+    Expose DB session dependency.
+
+    Yields an AsyncSession that is properly committed/rolled back on exit.
+    Uses the same lifecycle as get_db_session to ensure proper cleanup.
+    """
     async for session in get_db_session():
-        return session
-    raise RuntimeError("Database session dependency failed to yield")
+        try:
+            yield session
+        except Exception:
+            # Let the outer get_db_session handle rollback
+            raise
 
 
 async def get_current_user(

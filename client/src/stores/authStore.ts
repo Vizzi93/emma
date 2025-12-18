@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { AxiosError } from 'axios';
 
 import { api } from '@/lib/api';
+
+// Type for API error responses
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
 
 export interface User {
   id: string;
@@ -71,8 +78,9 @@ export const useAuthStore = create<AuthState>()(
               localStorage.removeItem('emma-auth');
             }, { once: true });
           }
-        } catch (error: any) {
-          const message = error.response?.data?.detail || 'Login fehlgeschlagen';
+        } catch (error) {
+          const axiosError = error as AxiosError<ApiErrorResponse>;
+          const message = axiosError.response?.data?.detail ?? 'Login fehlgeschlagen';
           set({ error: message, isLoading: false });
           throw error;
         }
@@ -94,8 +102,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
-        } catch (error: any) {
-          const message = error.response?.data?.detail || 'Registrierung fehlgeschlagen';
+        } catch (error) {
+          const axiosError = error as AxiosError<ApiErrorResponse>;
+          const message = axiosError.response?.data?.detail ?? 'Registrierung fehlgeschlagen';
           set({ error: message, isLoading: false });
           throw error;
         }

@@ -193,11 +193,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     return () => disconnect();
   }, [connect, disconnect]);
 
-  // Reconnect when token changes
+  // Reconnect when token changes - use a small delay to ensure disconnect completes
   useEffect(() => {
     if (tokens?.access_token) {
+      // Disconnect first, then reconnect after a short delay
       disconnect();
-      connect();
+      const reconnectTimeout = setTimeout(() => {
+        connect();
+      }, 100); // Small delay to ensure clean disconnect
+
+      return () => clearTimeout(reconnectTimeout);
     }
   }, [tokens?.access_token, connect, disconnect]);
 

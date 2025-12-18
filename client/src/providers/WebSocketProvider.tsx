@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useCallback, useState } from 'react';
+import { createContext, useContext, ReactNode, useCallback, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
@@ -11,13 +11,23 @@ interface WebSocketContextValue {
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
-  const [toastShown, setToastShown] = useState<Record<string, boolean>>({});
+  // Use ref to track shown toasts (avoids dependency loop)
+  const toastShownRef = useRef<Record<string, boolean>>({});
+  const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      timeoutsRef.current.clear();
+    };
+  }, []);
 
   const handleStatusChange = useCallback(
     (serviceId: string, oldStatus: string, newStatus: string) => {
       // Show toast for status changes
       const toastKey = `${serviceId}-${newStatus}`;
-      if (toastShown[toastKey]) return;
+      if (toastShownRef.current[toastKey]) return;
 
       if (newStatus === 'unhealthy') {
         toast.error(`Service ist jetzt unhealthy`, {
@@ -36,18 +46,23 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      setToastShown((prev) => ({ ...prev, [toastKey]: true }));
-      
-      // Reset toast shown after 30 seconds
-      setTimeout(() => {
-        setToastShown((prev) => {
-          const next = { ...prev };
-          delete next[toastKey];
-          return next;
-        });
+      toastShownRef.current[toastKey] = true;
+
+      // Clear any existing timeout for this key
+      const existingTimeout = timeoutsRef.current.get(toastKey);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+
+      // Reset toast shown after 30 seconds with cleanup tracking
+      const timeoutId = setTimeout(() => {
+        delete toastShownRef.current[toastKey];
+        timeoutsRef.current.delete(toastKey);
       }, 30000);
+
+      timeoutsRef.current.set(toastKey, timeoutId);
     },
-    [toastShown]
+    []
   );
 
   const { status, isConnected, lastEvent } = useWebSocket({

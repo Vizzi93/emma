@@ -1,6 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 
+// Type for location state with redirect info
+interface LocationState {
+  from?: {
+    pathname: string;
+  };
+}
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: string[];
@@ -29,7 +36,8 @@ export function GuestRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   if (isAuthenticated) {
-    const from = (location.state as any)?.from?.pathname || '/dashboard';
+    const state = location.state as LocationState | null;
+    const from = state?.from?.pathname ?? '/dashboard';
     return <Navigate to={from} replace />;
   }
 

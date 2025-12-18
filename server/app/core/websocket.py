@@ -7,13 +7,41 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 import structlog
 from fastapi import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, ValidationError
 
 logger = structlog.get_logger(__name__)
+
+
+# Pydantic models for WebSocket message validation
+class WebSocketMessage(BaseModel):
+    """Base WebSocket message from client."""
+
+    type: Literal["ping", "subscribe", "unsubscribe"]
+
+
+class SubscribeMessage(WebSocketMessage):
+    """Subscribe to a channel."""
+
+    type: Literal["subscribe"]
+    channel: str
+
+
+class UnsubscribeMessage(WebSocketMessage):
+    """Unsubscribe from a channel."""
+
+    type: Literal["unsubscribe"]
+    channel: str
+
+
+class PingMessage(WebSocketMessage):
+    """Ping message for keepalive."""
+
+    type: Literal["ping"]
 
 
 class EventType(str, Enum):
@@ -248,37 +276,69 @@ class ConnectionManager:
     ) -> WebSocketEvent | None:
         """
         Handle an incoming message from a client.
-        
+
         Supports:
         - ping/pong for keepalive
         - subscribe/unsubscribe for channels
         """
         try:
             data = json.loads(message)
-            msg_type = data.get("type", "")
-            
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "websocket_invalid_json",
+                connection_id=connection_id,
+                error=str(e),
+            )
+            return WebSocketEvent(
+                type=EventType.PONG,
+                data={"error": "Invalid JSON format"},
+            )
+
+        msg_type = data.get("type", "")
+
+        try:
             if msg_type == "ping":
+                PingMessage.model_validate(data)
                 return WebSocketEvent(type=EventType.PONG, data={})
-            
+
             elif msg_type == "subscribe":
-                channel = data.get("channel")
-                if channel:
-                    await self.subscribe(connection_id, channel)
-                    return WebSocketEvent(
-                        type=EventType.CONNECTED,
-                        data={"subscribed": channel},
-                    )
-            
+                validated = SubscribeMessage.model_validate(data)
+                await self.subscribe(connection_id, validated.channel)
+                return WebSocketEvent(
+                    type=EventType.CONNECTED,
+                    data={"subscribed": validated.channel},
+                )
+
             elif msg_type == "unsubscribe":
-                channel = data.get("channel")
-                if channel:
-                    await self.unsubscribe(connection_id, channel)
-            
-            return None
-            
-        except json.JSONDecodeError:
-            logger.warning("websocket_invalid_message", connection_id=connection_id)
-            return None
+                validated = UnsubscribeMessage.model_validate(data)
+                await self.unsubscribe(connection_id, validated.channel)
+                return WebSocketEvent(
+                    type=EventType.PONG,
+                    data={"unsubscribed": validated.channel},
+                )
+
+            else:
+                logger.warning(
+                    "websocket_unknown_message_type",
+                    connection_id=connection_id,
+                    msg_type=msg_type,
+                )
+                return WebSocketEvent(
+                    type=EventType.PONG,
+                    data={"error": f"Unknown message type: {msg_type}"},
+                )
+
+        except ValidationError as e:
+            logger.warning(
+                "websocket_validation_error",
+                connection_id=connection_id,
+                msg_type=msg_type,
+                errors=e.errors(),
+            )
+            return WebSocketEvent(
+                type=EventType.PONG,
+                data={"error": "Invalid message format", "details": e.errors()},
+            )
 
 
 # Global connection manager instance

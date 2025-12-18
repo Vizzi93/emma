@@ -75,7 +75,12 @@ async def websocket_endpoint(
                                 data={"keepalive": True},
                             ).to_json()
                         )
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(
+                            "websocket_keepalive_failed",
+                            connection_id=connection_id,
+                            error=str(e),
+                        )
                         break
                 else:
                     break
@@ -83,11 +88,24 @@ async def websocket_endpoint(
         keepalive_task = asyncio.create_task(send_keepalive())
         
         try:
-            # Message loop
+            # Message loop with timeout to detect hung connections
+            RECEIVE_TIMEOUT = 120  # 2 minutes, keepalive is 30s
             while True:
-                message = await websocket.receive_text()
+                try:
+                    message = await asyncio.wait_for(
+                        websocket.receive_text(),
+                        timeout=RECEIVE_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "websocket_receive_timeout",
+                        connection_id=connection_id,
+                        timeout=RECEIVE_TIMEOUT,
+                    )
+                    break
+
                 response = await manager.handle_message(connection_id, message)
-                
+
                 if response:
                     await websocket.send_text(response.to_json())
                     
