@@ -1,1 +1,0 @@
-# eMMA Backend Application
